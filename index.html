@@ -31,10 +31,13 @@
 
         /* Base body styling */
         body {
-            overflow: hidden;          /* Prevent scrolling on main body */
             background-color: var(--bg-color);
             color: var(--text-color);
             transition: all 0.3s ease; /* Smooth transition for theme changes */
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
         /* Navigation bar styling */
@@ -110,17 +113,21 @@
         /* Main chat area container */
         .main-chat {
             margin-top: 56px;          /* Space for fixed navbar */
-            height: calc(100vh - 56px); /* Full remaining height */
             display: flex;
             flex-direction: column;    /* Stack elements vertically */
+            flex: 1;
+            height: calc(100vh - 56px); /* Full remaining height */
+            position: relative;
+            overflow: hidden;
         }
 
         /* Chat message history area */
         .chat-history {
-            flex-grow: 1;              /* Expand to fill available space */
+            flex: 1;                  /* Expand to fill available space */
             overflow-y: auto;          /* Scrollable for long conversations */
             padding: 1rem;
             background-color: var(--bg-color);
+            padding-bottom: 80px;      /* Add padding to avoid overlapping with input */
         }
 
         /* Individual message styling */
@@ -150,6 +157,11 @@
             padding: 0.8rem;
             background-color: var(--card-bg);
             border-top: 1px solid rgba(128,128,128,0.2); /* Subtle top border */
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
         }
 
         /* New chat floating action button */
@@ -239,6 +251,21 @@
         @media (max-width: 768px) {
             .message {
                 max-width: 90%;      /* Wider messages on small screens */
+            }
+            
+            .new-chat-fab {
+                bottom: 90px;        /* Adjusted to avoid overlapping with input on mobile */
+                right: 15px;
+                width: 48px;
+                height: 48px;
+            }
+            
+            .input-container {
+                padding: 0.6rem;     /* Slightly smaller padding on mobile */
+            }
+            
+            .chat-history {
+                padding-bottom: 70px; /* Ensure space for input on mobile */
             }
         }
     </style>
@@ -534,8 +561,8 @@
      * Shows/hides overlay background
      */
     function toggleSidebar() {
-        document.getElementById('sidebar').classList.remove('active');
-        document.getElementById('overlay').classList.remove('active');
+        document.getElementById('sidebar').classList.toggle('active');
+        document.getElementById('overlay').classList.toggle('active');
     }
 
     /**
@@ -773,6 +800,17 @@
             document.getElementById('sendButton').click();
         }
     });
+
+    // Fix for mobile viewport height issues
+    function setMobileHeight() {
+        // Set CSS custom property for viewport height that works properly on mobile
+        const vh = window.innerHeight * 0.01;
+        document.documentElement.style.setProperty('--vh', `${vh}px`);
+    }
+    
+    // Call on load and resize
+    window.addEventListener('load', setMobileHeight);
+    window.addEventListener('resize', setMobileHeight);
 
     // ==========================================
     // Initialization
