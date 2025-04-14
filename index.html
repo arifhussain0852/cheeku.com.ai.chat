@@ -2,792 +2,836 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enhanced Groq Chat</title>
-    <!-- Bootstrap CSS and JS for responsive design and UI components -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Bootstrap Icons for UI elements -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI Chat</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css">
     <style>
-        /* CSS Variables for theme handling - light and dark mode */
+        * {
+            -webkit-tap-highlight-color: transparent;
+            box-sizing: border-box;
+            font-family: 'Roboto', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
         :root {
-            --primary-color: #1976d2; /* Main theme color - blue */
-            --bg-color: #f5f5f5;      /* Background color - light gray */
-            --text-color: #000;        /* Text color - black */
-            --card-bg: #fff;           /* Card background - white */
-            --icon-color: #000;        /* Icon color - black */
+            --bg-color: #f7f9fb;
+            --text-color: #263238;
+            --sidenav-bg: #ffffff;
+            --border-color: #e0e0e0;
+            --user-msg-bg: #e3f2fd;
+            --user-msg-border: #bbdefb;
+            --assistant-msg-bg: #ffffff;
+            --assistant-msg-border: #e0e0e0;
+            --input-bg: #fff;
+            --hover-bg: #f5f5f5;
+            --active-bg: #e1f5fe;
+            --primary-color: #2196F3;
+            --primary-hover: #1976D2;
+            --secondary-color: #8bc34a;
+            --animation-color: #03A9F4;
+            --thinking-bg: rgba(3, 169, 244, 0.1);
+            --shadow-color: rgba(0, 0, 0, 0.08);
+            --header-bg: #2196F3;
+            --header-text: #ffffff;
         }
 
-        /* Dark theme variables */
-        [data-theme="dark"] {
-            --primary-color: #90caf9;  /* Lighter blue for dark mode */
-            --bg-color: #121212;       /* Dark background */
-            --text-color: #fff;        /* White text for dark mode */
-            --card-bg: #1e1e1e;        /* Darker card background */
-            --icon-color: #fff;        /* White icons for dark mode */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #121212;
+                --text-color: #e0e0e0;
+                --sidenav-bg: #1e1e1e;
+                --border-color: #333333;
+                --user-msg-bg: #0d47a1;
+                --user-msg-border: #1565c0;
+                --assistant-msg-bg: #2d2d2d;
+                --assistant-msg-border: #424242;
+                --input-bg: #2d2d2d;
+                --hover-bg: #333333;
+                --active-bg: #0d47a1;
+                --primary-color: #2196F3;
+                --primary-hover: #1976D2;
+                --secondary-color: #8bc34a;
+                --animation-color: #29b6f6;
+                --thinking-bg: rgba(3, 169, 244, 0.15);
+                --shadow-color: rgba(0, 0, 0, 0.3);
+                --header-bg: #0d47a1;
+                --header-text: #ffffff;
+            }
         }
 
-        /* Base body styling */
         body {
-            overflow: hidden;          /* Prevent scrolling on main body */
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            transition: all 0.3s ease; /* Smooth transition for theme changes */
-        }
-
-        /* Navigation bar styling */
-        .navbar {
-            background-color: var(--card-bg);
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Subtle shadow for depth */
-            padding: 0.5rem 1rem;
-            position: fixed;           /* Fixed position at top */
-            top: 0;
-            width: 100%;
-            z-index: 1000;             /* Ensure navbar stays on top */
-        }
-
-        /* Navbar button icon color */
-        .navbar .btn i {
-            color: var(--icon-color);
-        }
-
-        /* App title styling */
-        .navbar-brand {
-            color: var(--text-color);
-            font-size: 1.2rem;
-        }
-
-        /* Sidebar styling for chat history */
-        .sidebar {
-            position: fixed;
-            left: -100%;               /* Initially hidden off-screen */
-            top: 56px;                 /* Position below navbar */
-            height: calc(100vh - 56px); /* Full height minus navbar */
-            width: 80%;
-            max-width: 300px;          /* Limit maximum width */
-            background-color: var(--card-bg);
-            transition: left 0.3s ease; /* Smooth slide-in animation */
-            z-index: 999;
-            padding: 1rem;
-            overflow-y: auto;          /* Scrollable when content overflows */
-        }
-
-        /* Active state for sidebar (when visible) */
-        .sidebar.active {
-            left: 0;
-        }
-
-        /* Chat list container */
-        .chat-list {
-            list-style: none;
+            margin: 0;
             padding: 0;
-        }
-
-        /* Individual chat item in sidebar */
-        .chat-list-item {
-            padding: 0.75rem 1rem;
-            margin-bottom: 0.5rem;
-            border-radius: 0.5rem;
-            cursor: pointer;           /* Pointer cursor for clickable items */
-            background-color: var(--card-bg);
-            color: var(--text-color);
-            box-shadow: 0 1px 3px rgba(0,0,0,0.12); /* Subtle shadow */
-        }
-
-        /* Hover effect for chat items */
-        .chat-list-item:hover {
-            background-color: rgba(25, 118, 210, 0.1); /* Light highlight */
-        }
-
-        /* Active/selected chat styling */
-        .chat-list-item.active {
-            background-color: rgba(25, 118, 210, 0.2); /* Stronger highlight */
-            border-left: 3px solid var(--primary-color); /* Left accent border */
-        }
-
-        /* Main chat area container */
-        .main-chat {
-            margin-top: 56px;          /* Space for fixed navbar */
-            height: calc(100vh - 56px); /* Full remaining height */
+            height: 100vh;
             display: flex;
-            flex-direction: column;    /* Stack elements vertically */
-        }
-
-        /* Chat message history area */
-        .chat-history {
-            flex-grow: 1;              /* Expand to fill available space */
-            overflow-y: auto;          /* Scrollable for long conversations */
-            padding: 1rem;
+            overflow: hidden;
             background-color: var(--bg-color);
-        }
-
-        /* Individual message styling */
-        .message {
-            max-width: 85%;           /* Limit message width */
-            margin-bottom: 1rem;      /* Space between messages */
-            padding: 0.8rem;
-            border-radius: 1rem;      /* Rounded corners for message bubbles */
-            position: relative;
-        }
-
-        /* User message styling (right-aligned) */
-        .user-message {
-            margin-left: auto;        /* Push to right side */
-            background-color: var(--primary-color);
-            color: #fff;              /* White text for contrast */
-        }
-
-        /* Assistant message styling (left-aligned) */
-        .assistant-message {
-            background-color: var(--card-bg);
             color: var(--text-color);
+            transition: all 0.3s ease;
         }
 
-        /* Input container at bottom */
-        .input-container {
-            padding: 0.8rem;
-            background-color: var(--card-bg);
-            border-top: 1px solid rgba(128,128,128,0.2); /* Subtle top border */
+        #sidenav {
+            width: 280px;
+            background: var(--sidenav-bg);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            z-index: 1001;
+            box-shadow: 2px 0 5px var(--shadow-color);
+            transition: all 0.3s ease;
         }
 
-        /* New chat floating action button */
-        .new-chat-fab {
-            position: fixed;
-            bottom: 80px;
-            right: 20px;
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;       /* Circular button */
-            background-color: var(--primary-color);
+        #sidenav-header {
+            padding: 20px;
+            background-color: var(--header-bg);
+            color: var(--header-text);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px var(--shadow-color);
+        }
+
+        #new-chat-btn {
+            background: var(--secondary-color);
             color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 8px 16px;
+            cursor: pointer;
             display: flex;
             align-items: center;
-            justify-content: center;  /* Center the plus icon */
-            box-shadow: 0 3px 5px rgba(0,0,0,0.3); /* Elevated shadow */
+            gap: 8px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        #new-chat-btn:hover {
+            background: #7cb342;
+            transform: translateY(-1px);
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        #new-chat-btn:disabled {
+            background: #c0c0c0;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        #chat-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary-color) transparent;
+        }
+
+        #chat-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #chat-list::-webkit-scrollbar-thumb {
+            background-color: var(--primary-color);
+            border-radius: 6px;
+        }
+
+        #chat-list.disabled {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .chat-item {
+            padding: 14px;
+            margin: 8px 0;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s ease;
+            border-left: 3px solid transparent;
+            background: var(--sidenav-bg);
+            box-shadow: 0 1px 3px var(--shadow-color);
+        }
+
+        .chat-item:hover {
+            background: var(--hover-bg);
+            transform: translateX(2px);
+        }
+
+        .chat-item.active {
+            background: var(--active-bg);
+            border-left: 3px solid var(--primary-color);
+        }
+
+        .delete-chat {
+            color: #ff5252;
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            font-size: 18px;
+        }
+
+        .chat-item:hover .delete-chat {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        #main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            position: relative;
+            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%239C92AC' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E");
+        }
+
+        #chat {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            margin-bottom: 10px;
+            scroll-behavior: smooth;
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary-color) transparent;
+        }
+
+        #chat::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #chat::-webkit-scrollbar-thumb {
+            background-color: var(--primary-color);
+            border-radius: 6px;
+        }
+
+        #chat.generating {
+            overflow: hidden;
+        }
+
+        #input-container {
+            display: flex;
+            gap: 12px;
+            padding: 16px;
+            background: var(--input-bg);
+            position: sticky;
+            bottom: 0;
+            border-radius: 24px;
+            margin: 0 16px 16px 16px;
+            box-shadow: 0 4px 12px var(--shadow-color);
+            transition: all 0.3s ease;
+            border: 1px solid var(--border-color);
+        }
+
+        #input-container:focus-within {
+            box-shadow: 0 6px 16px var(--shadow-color);
+            transform: translateY(-2px);
+            border-color: var(--primary-color);
+        }
+
+        #user-input {
+            flex: 1;
+            padding: 12px 16px;
+            font-size: 16px;
             border: none;
-            z-index: 100;
+            border-radius: 24px;
+            -webkit-appearance: none;
+            resize: none;
+            min-height: 24px;
+            max-height: 120px;
+            overflow-y: auto;
+            outline: none;
+            background: var(--input-bg);
+            color: var(--text-color);
         }
 
-        /* Theme toggle button styling */
-        .theme-toggle {
-            background: none;
+        #user-input:disabled {
+            background: var(--hover-bg);
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        #send-button, #stop-button {
+            width: 48px;
+            height: 48px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--primary-color);
+            color: white;
             border: none;
+            border-radius: 50%;
+            -webkit-appearance: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            font-size: 20px;
+        }
+
+        #send-button:hover, #stop-button:hover {
+            background: var(--primary-hover);
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+        }
+
+        #send-button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+            pointer-events: none;
+            box-shadow: none;
+        }
+
+        #stop-button {
+            display: none;
+            background: #f44336;
+        }
+
+        #stop-button:hover {
+            background: #d32f2f;
+        }
+
+        .message {
+            position: relative;
+            margin: 16px 0;
+            padding: 16px;
+            border-radius: 16px;
+            max-width: 85%;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+            box-shadow: 0 2px 6px var(--shadow-color);
+            animation: fadeIn 0.3s ease-in-out;
+            line-height: 1.5;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .user-message {
+            background: var(--user-msg-bg);
             color: var(--text-color);
-            padding: 0.5rem;
+            margin-left: auto;
+            border-top-right-radius: 4px;
+            border-left: 1px solid var(--user-msg-border);
         }
 
-        /* Dropdown menu styling */
-        .dropdown-menu {
-            background-color: var(--card-bg);
-            border-color: rgba(128,128,128,0.2);
-            min-width: 200px;
-            padding: 0.5rem;
-        }
-
-        /* Dropdown item styling */
-        .dropdown-item {
+        .assistant-message {
+            background: var(--assistant-msg-bg);
             color: var(--text-color);
-            padding: 0.5rem 1rem;
+            margin-right: auto;
+            border-top-left-radius: 4px;
+            border-right: 1px solid var(--assistant-msg-border);
         }
 
-        /* Dropdown item hover effect */
-        .dropdown-item:hover {
-            background-color: rgba(25, 118, 210, 0.1);
-        }
-
-        /* Dropdown header styling */
-        .dropdown-header {
+        .thinking {
             color: var(--text-color);
+            background: var(--thinking-bg);
+            border-radius: 12px;
+            padding: 16px;
+            margin: 16px 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 500;
+            box-shadow: 0 2px 6px var(--shadow-color);
+            max-width: 85%;
+            margin-right: auto;
         }
 
-        /* Model selector dropdown styling */
-        .model-selector {
-            width: 100%;
-            padding: 0.5rem;
-            background-color: var(--card-bg);
-            color: var(--text-color);
-            border: 1px solid rgba(128,128,128,0.2);
-            border-radius: 4px;
+        .thinking::after {
+            content: '';
+            width: 16px;
+            height: 16px;
+            border: 3px solid var(--animation-color);
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 0.8s linear infinite;
         }
 
-        /* Model selector options styling */
-        .model-selector option {
-            background-color: var(--card-bg);
-            color: var(--text-color);
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
 
-        /* Semi-transparent overlay for sidebar backdrop */
+        .app-title {
+            font-weight: 500;
+            font-size: 1.25rem;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .app-title i {
+            font-size: 1.5rem;
+        }
+
+        .error-message {
+            color: #f44336;
+            background: rgba(244, 67, 54, 0.1);
+            padding: 12px;
+            border-radius: 8px;
+            margin: 12px 0;
+            border-left: 3px solid #f44336;
+        }
+
+        #menu-toggle {
+            display: none;
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            z-index: 1001;
+            background: var(--primary-color);
+            border: none;
+            color: white;
+            font-size: 24px;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+
+        #menu-toggle:hover {
+            background: var(--primary-hover);
+        }
+
+        #menu-toggle:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+
         .overlay {
+            display: none;
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: rgba(0,0,0,0.5); /* Semi-transparent black */
-            display: none;            /* Initially hidden */
-            z-index: 998;             /* Below sidebar but above content */
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+            animation: fadeIn 0.3s ease;
+            backdrop-filter: blur(2px);
         }
 
-        /* Active state for overlay */
         .overlay.active {
             display: block;
         }
 
-        /* Responsive adjustments for mobile */
+        body.generating {
+            pointer-events: none;
+        }
+
+        body.generating #sidenav,
+        body.generating #chat-list,
+        body.generating .chat-item,
+        body.generating #menu-toggle {
+            pointer-events: auto;
+        }
+
+        body.generating #stop-button {
+            pointer-events: auto;
+        }
+
         @media (max-width: 768px) {
-            .message {
-                max-width: 90%;      /* Wider messages on small screens */
+            #sidenav {
+                position: absolute;
+                left: -280px;
+                transition: left 0.3s ease;
+                z-index: 1000;
+                height: 100%;
+            }
+
+            #sidenav.open {
+                left: 0;
+            }
+
+            #menu-toggle {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            #main-content {
+                padding-top: 64px;
             }
         }
     </style>
 </head>
 <body>
-<!-- Top navigation bar -->
-<nav class="navbar">
-    <!-- Sidebar toggle button -->
-    <button class="btn" id="sidebarToggle">
-        <i class="bi bi-list"></i>
-    </button>
-    <!-- App title -->
-    <span class="navbar-brand">Cheeku 1.0</span>
-    <!-- Right-side controls -->
-    <div class="d-flex">
-        <!-- Theme toggle (light/dark mode) -->
-        <button class="theme-toggle" id="themeToggle">
-            <i class="bi bi-moon"></i>
+<button id="menu-toggle" class="bi bi-list"></button>
+<div class="overlay"></div>
+<div id="sidenav">
+    <div id="sidenav-header">
+        <h2 class="app-title"><i class="bi bi-robot"></i> AI Chat</h2>
+        <button id="new-chat-btn">
+            <i class="bi bi-plus-lg"></i>
+            New Chat
         </button>
-        <!-- Settings dropdown -->
-        <div class="dropdown">
-            <button class="btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="bi bi-gear"></i>
-            </button>
-            <!-- Dropdown menu for settings -->
-            <div class="dropdown-menu dropdown-menu-end">
-                <h6 class="dropdown-header">Select AI Model</h6>
-                <div class="px-3">
-                    <!-- Model selection dropdown -->
-                    <select class="model-selector" id="modelSelector">
-                        <option value="Llama-3.3-70b-Versatile">Llama 3.3 70B Versatile</option>
-                        <option value="Llama-3.3-70b-Specdec">Llama 3.3 70B Specdec</option>
-                        <option value="Llama-3.1-70b-Specdec">Llama 3.1 70B Specdec</option>
-                        <option value="Llama-3.2-3b-Preview">Llama 3.2 3B Preview</option>
-                        <option value="Llama-3.2-1b-Preview">Llama 3.2 1B Preview</option>
-                        <option value="Llama-3.1-70b-Versatile">Llama 3.1 70B Versatile</option>
-                        <option value="Llama-3.1-8b-Instant">Llama 3.1 8B Instant</option>
-                        <option value="Llama3-70b-8192">Llama3 70B 8K</option>
-                        <option value="Llama3-8b-8192">Llama3 8B 8K</option>
-                        <option value="Mixtral-8x7b-32768">Mixtral 8x7B 32K</option>
-                        <option value="Gemma2-9b-It">Gemma2 9B</option>
-                    </select>
-                </div>
-            </div>
-        </div>
     </div>
-</nav>
-
-<!-- Semi-transparent overlay for when sidebar is open -->
-<div class="overlay" id="overlay"></div>
-
-<!-- Sidebar for chat history -->
-<div class="sidebar" id="sidebar">
-    <ul class="chat-list" id="chatList"></ul>
+    <div id="chat-list"></div>
 </div>
-
-<!-- Main chat interface -->
-<div class="main-chat">
-    <!-- Chat messages container -->
-    <div class="chat-history" id="chatHistory"></div>
-    <!-- User input container -->
-    <div class="input-container">
-        <div class="input-group">
-            <!-- Text input field -->
-            <input type="text" class="form-control" id="userInput" placeholder="Ask anything...">
-            <!-- Send button -->
-            <button class="btn btn-primary" id="sendButton">
-                <i class="bi bi-send"></i>
-            </button>
-            <!-- Stop generation button (hidden by default) -->
-            <button class="btn btn-danger stop-btn" id="stopButton" style="display: none;">
-                <i class="bi bi-stop-fill"></i>
-            </button>
-        </div>
+<div id="main-content">
+    <div id="chat"></div>
+    <div id="input-container">
+        <textarea id="user-input" placeholder="Type a message..." rows="1"></textarea>
+        <button id="send-button">
+            <i class="bi bi-send-fill"></i>
+        </button>
+        <button id="stop-button">
+            <i class="bi bi-stop-fill"></i>
+        </button>
     </div>
 </div>
 
-<!-- Floating action button for new chat -->
-<button class="new-chat-fab" id="newChatBtn">
-    <i class="bi bi-plus-lg"></i>
-</button>
+<script type="module">
+    // Import Hugging Face Inference API
+    import { HfInference } from 'https://cdn.jsdelivr.net/npm/@huggingface/inference@2.6.4/+esm'
 
-<script>
-    // ==========================================
-    // API Configuration
-    // ==========================================
+// Initialize Hugging Face client object with API key
+const hf = new HfInference("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");
 
-    /**
-     * Groq API endpoint URL for chat completions
-     * This is the official endpoint to connect with Groq's LLM service
-     * @constant {string} GROQ_API_ENDPOINT
-     */
-    const GROQ_API_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
+// DOM element references
+const chat = document.getElementById("chat");
+const userInput = document.getElementById("user-input");
+const sendButton = document.getElementById("send-button");
+const stopButton = document.getElementById("stop-button");
+const chatList = document.getElementById("chat-list");
+const newChatBtn = document.getElementById("new-chat-btn");
+const menuToggle = document.getElementById("menu-toggle");
+const sidenav = document.getElementById("sidenav");
+const overlay = document.querySelector(".overlay");
 
-    /**
-     * API key for authenticating requests to Groq
-     * @constant {string} GROQ_API_KEY
-     */
-    const GROQ_API_KEY = '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';
+// Global state variables
+let currentChatId = null;          // ID of the active chat
+let chats = loadChats();           // Object containing all chat sessions
+let touchStartX = 0;               // Starting X coordinate for touch events
+let controller = null;             // AbortController for canceling generations
+let isGenerating = false;          // Flag for ongoing message generation
 
-    // ==========================================
-    // State Variables
-    // ==========================================
+/**
+ * Loads chat history from localStorage
+ * @returns {Object} Chat history object or empty object if no history exists
+ */
+function loadChats() {
+    const savedChats = localStorage.getItem('chats');
+    return savedChats ? JSON.parse(savedChats) : {};
+}
 
-    /**
-     * Array to store the current conversation messages
-     * Each message has a role ('user' or 'assistant') and content (text)
-     * @type {Array}
-     */
-    let messageHistory = [];
+/**
+ * Saves current chat state to localStorage and updates UI
+ */
+function saveChats() {
+    localStorage.setItem('chats', JSON.stringify(chats));
+    updateChatList();
+}
 
-    /**
-     * Unique identifier for the current chat
-     * Uses timestamp to ensure unique IDs
-     * @type {number}
-     */
-    let currentChatId = Date.now();
+/**
+ * Updates the chat list in the side navigation
+ * Creates chat items with delete functionality and handles active state
+ */
+function updateChatList() {
+    chatList.innerHTML = '';
+    Object.entries(chats).forEach(([id, chat]) => {
+        const chatItem = document.createElement('div');
+        chatItem.className = `chat-item ${id === currentChatId ? 'active' : ''}`;
 
-    /**
-     * Object to store all chats
-     * Keys are chat IDs, values are objects with messages and title
-     * @type {Object}
-     */
-    let chats = {};
+        const firstMessage = chat.messages[0]?.content || 'New Chat';
+        chatItem.innerHTML = `
+            <span>${firstMessage.substring(0, 30)}${firstMessage.length > 30 ? '...' : ''}</span>
+            <i class="bi bi-trash delete-chat"></i>
+        `;
 
-    /**
-     * Flag to track if AI is currently generating a response
-     * Used to prevent sending multiple requests simultaneously
-     * @type {boolean}
-     */
-    let currentlyGenerating = false;
-
-    // ==========================================
-    // Chat Management Functions
-    // ==========================================
-
-    /**
-     * Loads saved chats from localStorage on application startup
-     * If no chats exist, creates a new default chat
-     */
-    function loadChats() {
-        // Try to get chats from localStorage
-        const savedChats = localStorage.getItem('cheekuChats');
-        if (savedChats) {
-            chats = JSON.parse(savedChats);
-            // If no chats exist, create a new one
-            if (Object.keys(chats).length === 0) {
-                createNewChat();
-            } else {
-                // Switch to the most recent chat
-                const chatIds = Object.keys(chats);
-                currentChatId = Math.max(...chatIds.map(Number));
-                messageHistory = chats[currentChatId].messages;
-                updateChatList();
-                displayChatHistory();
-            }
-        } else {
-            // No saved chats at all, create a new one
-            createNewChat();
-        }
-    }
-
-    /**
-     * Saves current chats to localStorage for persistence
-     * Also notifies Android app if available
-     */
-    function saveChats() {
-        // Save to localStorage
-        localStorage.setItem('cheekuChats', JSON.stringify(chats));
-
-        // Also notify Android app about the update (for mobile integration)
-        try {
-            // Try to call the Android interface if available
-            Android.onChatsUpdated(JSON.stringify(chats));
-        } catch (e) {
-            console.log('Android interface not available');
-        }
-    }
-
-    /**
-     * Creates a new chat with a unique ID
-     * Sets it as the current chat and updates the UI
-     */
-    function createNewChat() {
-        // Generate new chat ID using current timestamp
-        currentChatId = Date.now();
-        // Clear message history
-        messageHistory = [];
-        // Create new chat object with default title
-        chats[currentChatId] = {
-            messages: [],
-            title: 'New Chat'
+        chatItem.querySelector('.delete-chat').onclick = (e) => {
+            e.stopPropagation();
+            deleteChat(id);
         };
-        // Update UI
-        updateChatList();
-        clearChatHistory();
-        // Add welcome message
-        appendMessage("Hello! I'm Cheeku 1.0, your AI assistant. How can I help you today?", false);
-        // Save to storage
-        saveChats();
-        // Close sidebar if open
-        toggleSidebar();
+
+        chatItem.onclick = () => loadChat(id);
+        chatList.appendChild(chatItem);
+    });
+}
+
+/**
+ * Creates a new chat session with unique timestamp ID
+ */
+function createNewChat() {
+    const chatId = Date.now().toString();
+    chats[chatId] = {
+        messages: []
+    };
+    saveChats();
+    loadChat(chatId);
+}
+
+/**
+ * Deletes a chat session and handles UI cleanup
+ * @param {string} chatId - ID of chat to delete
+ */
+function deleteChat(chatId) {
+    delete chats[chatId];
+    saveChats();
+    if (chatId === currentChatId) {
+        createNewChat();
+    }
+}
+
+/**
+ * Loads a specific chat session and updates UI
+ * @param {string} chatId - ID of chat to load
+ */
+function loadChat(chatId) {
+    currentChatId = chatId;
+    chat.innerHTML = '';
+    chats[chatId].messages.forEach(msg => {
+        appendMessage(msg.role, msg.content, false);
+    });
+    updateChatList();
+}
+
+/**
+ * Appends a message to the chat window
+ * @param {string} role - 'user' or 'assistant'
+ * @param {string} content - Message content
+ * @param {boolean} animate - Whether to apply typewriter effect
+ */
+function appendMessage(role, content, animate = true) {
+    const messageElement = document.createElement("div");
+    messageElement.className = `message ${role}-message`;
+
+    // Add role icon
+    const iconName = role === 'user' ? 'person-circle' : 'robot';
+    messageElement.innerHTML = `<div style="display: flex; align-items: start; gap: 8px; margin-bottom: 6px;">
+        <i class="bi bi-${iconName}" style="font-size: 1.2rem; color: var(--primary-color);"></i>
+        <div style="font-weight: 500; font-size: 0.9rem;">${role === 'user' ? 'You' : 'AI Assistant'}</div>
+    </div>
+    <div class="message-content"></div>`;
+
+    const contentElement = messageElement.querySelector('.message-content');
+
+    if (role === 'assistant' && animate) {
+        contentElement.textContent = '';
+        let index = 0;
+        isGenerating = true;
+        chat.classList.add('generating');
+        document.body.classList.add('generating');
+        userInput.disabled = true;
+        sendButton.style.display = 'none';
+        stopButton.style.display = 'flex';
+
+        const typeWriter = () => {
+            if (index < content.length && isGenerating) {
+                contentElement.textContent += content.charAt(index);
+                index++;
+                chat.scrollTop = chat.scrollHeight;
+                setTimeout(typeWriter, 5);
+            } else {
+                isGenerating = false;
+                chat.classList.remove('generating');
+                document.body.classList.remove('generating');
+                userInput.disabled = false;
+                stopButton.style.display = 'none';
+                sendButton.style.display = 'flex';
+            }
+        };
+        typeWriter();
+    } else {
+        contentElement.textContent = content;
+    }
+    chat.appendChild(messageElement);
+    if (!animate) {
+        chat.scrollTop = chat.scrollHeight;
+    }
+}
+
+/**
+ * Adds a typing indicator to the chat
+ * @returns {HTMLElement} The thinking indicator element
+ */
+function appendThinking() {
+    const thinking = document.createElement("div");
+    thinking.className = "thinking";
+    thinking.innerHTML = `
+        <i class="bi bi-robot" style="font-size: 1.2rem;"></i>
+        <span>AI is thinking</span>
+    `;
+    chat.appendChild(thinking);
+    requestAnimationFrame(() => {
+        chat.scrollTop = chat.scrollHeight;
+    });
+    document.body.classList.add('generating');
+    chat.classList.add('generating');
+    userInput.disabled = true;
+    return thinking;
+}
+
+/**
+ * Handles sending a message and getting a response
+ * - Creates new chat if none exists
+ * - Appends user message
+ * - Generates assistant response using Hugging Face API
+ * - Handles errors and UI states
+ */
+async function sendMessage() {
+    const userMessage = userInput.value.trim();
+    if (!userMessage || isGenerating) return;
+
+    if (!currentChatId) {
+        createNewChat();
     }
 
-    /**
-     * Switches to a different chat based on ID
-     * Updates UI to show selected chat's messages
-     * @param {string} chatId - ID of the chat to switch to
-     */
-    function switchChat(chatId) {
-        // Update current chat ID
-        currentChatId = chatId;
-        // Load this chat's message history
-        messageHistory = chats[chatId].messages;
-        // Update UI to reflect the change
-        updateChatList();
-        displayChatHistory();
-    }
+    appendMessage("user", userMessage);
+    chats[currentChatId].messages.push({ role: "user", content: userMessage });
+    saveChats();
 
-    /**
-     * Deletes a chat from storage
-     * If the current chat is deleted, creates a new one
-     * @param {string} chatId - ID of the chat to delete
-     * @param {Event} event - Click event (to prevent bubbling)
-     */
-    function deleteChat(chatId, event) {
-        // Prevent click from bubbling to parent (which would select the chat)
-        event.stopPropagation();
-        // Remove the chat from storage
-        delete chats[chatId];
-        // Save changes
+    userInput.value = "";
+    userInput.style.height = 'auto';
+
+    const thinking = appendThinking();
+    controller = new AbortController();
+
+    try {
+        // Prepare context from last 4 messages
+        const contextPrompt = chats[currentChatId].messages
+            .slice(-4)
+            .map(msg => `${msg.role === 'user' ? 'Q' : 'A'}: ${msg.content}`)
+            .join('\n');
+
+        // Generate response using Hugging Face API
+        const response = await hf.textGeneration({
+            model: "Qwen/Qwen2.5-Coder-32B-Instruct",
+            inputs: `${contextPrompt}\nQ: ${userMessage}\nA:`,
+            parameters: {
+                max_new_tokens: 512,
+                temperature: 0.7,
+                top_p: 0.95,
+                repetition_penalty: 1.15
+            }
+        }, { signal: controller.signal });
+
+        thinking.remove();
+
+        // Clean and format the response
+        let assistantMessage = response.generated_text
+            .replace(/^[\s\S]*\nA:\s*/m, '')
+            .replace(/^[^a-zA-Z]*/, '')
+            .trim();
+
+        appendMessage("assistant", assistantMessage, true);
+        chats[currentChatId].messages.push({ role: "assistant", content: assistantMessage });
         saveChats();
-        // If we deleted the current chat, create a new one
-        if (currentChatId === chatId) {
-            createNewChat();
+
+    } catch (error) {
+        if (error.name === 'AbortError') {
+            console.log('Generation stopped by user');
         } else {
-            // Otherwise just update the sidebar list
-            updateChatList();
-        }
-    }
-
-    // ==========================================
-    // UI Management Functions
-    // ==========================================
-
-    /**
-     * Updates the sidebar chat list
-     * Highlights the current active chat
-     */
-    function updateChatList() {
-        const chatList = document.getElementById('chatList');
-        chatList.innerHTML = '';
-
-        // Create list items for each chat (newest first)
-        Object.entries(chats).reverse().forEach(([id, chat]) => {
-            const li = document.createElement('li');
-            li.className = `chat-list-item ${id == currentChatId ? 'active' : ''}`;
-            li.innerHTML = `
-                <span><i class="bi bi-chat-left-text"></i> ${chat.title}</span>
-                <button class="btn btn-link p-0 delete-chat-btn" onclick="deleteChat('${id}', event)">
-                    <i class="bi bi-trash"></i>
-                </button>
+            console.error("Error:", error);
+            const errorElement = document.createElement("div");
+            errorElement.className = "error-message";
+            errorElement.innerHTML = `
+                <i class="bi bi-exclamation-triangle-fill" style="margin-right: 8px;"></i>
+                Sorry, there was an error processing your message. Please try again.
             `;
-            // Add click handler to switch chats
-            li.onclick = () => {
-                switchChat(id);
-                toggleSidebar();
-            };
-            chatList.appendChild(li);
-        });
-    }
-
-    /**
-     * Clears the chat history display in the UI
-     */
-    function clearChatHistory() {
-        document.getElementById('chatHistory').innerHTML = '';
-    }
-
-    /**
-     * Displays all messages from the current chat in the UI
-     */
-    function displayChatHistory() {
-        clearChatHistory();
-        // Loop through all messages in current chat
-        messageHistory.forEach(msg => {
-            appendMessage(msg.content, msg.role === 'user');
-        });
-    }
-
-    /**
-     * Toggles sidebar visibility
-     * Shows/hides overlay background
-     */
-    function toggleSidebar() {
-        document.getElementById('sidebar').classList.remove('active');
-        document.getElementById('overlay').classList.remove('active');
-    }
-
-    /**
-     * Toggles input field and button states during response generation
-     * Also shows/hides the stop button
-     * @param {boolean} disabled - Whether to disable input controls
-     */
-    function setInputState(disabled) {
-        const userInput = document.getElementById('userInput');
-        const sendButton = document.getElementById('sendButton');
-        const stopButton = document.getElementById('stopButton');
-
-        // Disable/enable input field and send button
-        userInput.disabled = disabled;
-        sendButton.disabled = disabled;
-
-        // Show/hide stop button
-        stopButton.style.display = disabled ? 'block' : 'none';
-    }
-
-    /**
-     * Formats message text with proper paragraph and list handling
-     * Converts markdown-like syntax to HTML
-     * @param {string} content - Raw message text
-     * @returns {string} - HTML formatted content
-     */
-    function formatMessage(content) {
-        const paragraphs = content.split('\n\n');
-
-        return paragraphs.map(para => {
-            // Handle numbered lists (lines starting with numbers)
-            if (/^\d+\./.test(para)) {
-                const items = para.split(/\d+\./);
-                return `<ol>${items.map(item => item.trim() ? `<li>${item.trim()}</li>` : '').join('')}</ol>`;
-            }
-
-            // Handle bullet lists (lines starting with *)
-            if (para.includes('* ')) {
-                const items = para.split('* ');
-                return `<ul>${items.map(item => item.trim() ? `<li>${item.trim()}</li>` : '').join('')}</ul>`;
-            }
-
-            // Normal paragraph
-            return `<p>${para}</p>`;
-        }).join('');
-    }
-
-    /**
-     * Appends a new message to the chat history
-     * @param {string} content - The message text
-     * @param {boolean} isUser - True if message is from user, false if from assistant
-     */
-    function appendMessage(content, isUser) {
-        const chatHistory = document.getElementById('chatHistory');
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `message ${isUser ? 'user-message' : 'assistant-message'}`;
-
-        const contentDiv = document.createElement('div');
-        contentDiv.className = 'message-content';
-        contentDiv.innerHTML = isUser ? content : formatMessage(content);
-        messageDiv.appendChild(contentDiv);
-
-        chatHistory.appendChild(messageDiv);
-        // Auto-scroll to the latest message
-        chatHistory.scrollTop = chatHistory.scrollHeight;
-    }
-
-    /**
-     * Updates the content of the latest assistant message
-     * Used during streaming to show progressive generation
-     * @param {string} content - Updated message content
-     */
-    function updateLatestMessage(content) {
-        const messages = document.getElementsByClassName('assistant-message');
-        if (messages.length > 0) {
-            const latest = messages[messages.length - 1];
-            latest.querySelector('.message-content').innerHTML = formatMessage(content);
+            chat.appendChild(errorElement);
         }
+        thinking.remove();
+        isGenerating = false;
+        chat.classList.remove('generating');
+        document.body.classList.remove('generating');
+        userInput.disabled = false;
+        stopButton.style.display = 'none';
+        sendButton.style.display = 'flex';
+    } finally {
+        controller = null;
     }
+}
 
-    // ==========================================
-    // API Communication & Message Handling
-    // ==========================================
+// Event Listeners
 
-    /**
-     * Sends user message to Groq API and processes response
-     * @param {string} userInput - User's message text
-     */
-    async function sendMessage(userInput) {
-        try {
-            // Disable input while generating
-            setInputState(true);
-            currentlyGenerating = true;
-
-            // Create user message object and add to history
-            const userMessage = {
-                role: 'user',
-                content: userInput
-            };
-            messageHistory.push(userMessage);
-
-            // Get selected AI model from dropdown
-            const selectedModel = document.getElementById('modelSelector').value;
-
-            // Prepare request body for API
-            const requestBody = {
-                model: selectedModel,
-                messages: messageHistory,
-                temperature: 0.3,           // Lower temperature for more deterministic outputs
-                max_tokens: 1000            // Limit response length
-            };
-
-            // Show "generating" placeholder
-            appendMessage('Generating response...', false);
-
-            // Send request to Groq API
-            const response = await fetch(GROQ_API_ENDPOINT, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${GROQ_API_KEY}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(requestBody)
-            });
-
-            // Check for HTTP errors
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            // Parse JSON response
-            const data = await response.json();
-            const assistantMessage = data.choices[0].message.content;
-
-            // Simulate streaming effect for better UX
-            await simulateStreaming(assistantMessage);
-
-            // Add assistant response to message history
-            messageHistory.push({
-                role: 'assistant',
-                content: assistantMessage
-            });
-
-            // If this is the first exchange, use user message as chat title
-            if (messageHistory.length === 2) {
-                chats[currentChatId].title = userInput.slice(0, 30) + '...';
-                updateChatList();
-            }
-
-            // Save updated messages to current chat
-            chats[currentChatId].messages = messageHistory;
-            saveChats(); // Save after each message
-
-        } catch (error) {
-            console.error('Error:', error);
-            updateLatestMessage(`Error: ${error.message}`);
-        } finally {
-            // Reset generating state and enable input
-            currentlyGenerating = false;
-            setInputState(false);
-        }
+/**
+ * Handles stop button click - aborts ongoing generation
+ */
+stopButton.addEventListener("click", () => {
+    if (controller) {
+        controller.abort();
     }
+    isGenerating = false;
+});
 
-    /**
-     * Simulates streaming effect for assistant responses
-     * Makes it look like the AI is typing in real-time
-     * @param {string} content - Complete message content
-     * @returns {Promise} - Resolves when "typing" is complete
-     */
-    async function simulateStreaming(content) {
-        let currentText = '';
-        const words = content.split(' ');
+/**
+ * Handles textarea auto-resize
+ */
+userInput.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+});
 
-        // Gradually add words with delay
-        for (let i = 0; i < words.length && currentlyGenerating; i++) {
-            currentText += (i > 0 ? ' ' : '') + words[i];
-            updateLatestMessage(currentText);
-            // Small delay between words (50ms)
-            await new Promise(resolve => setTimeout(resolve, 50));
-        }
+// Basic UI event listeners
+sendButton.addEventListener("click", sendMessage);
+userInput.addEventListener("keypress", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
     }
+});
+newChatBtn.addEventListener("click", createNewChat);
 
-    // ==========================================
-    // Event Listeners
-    // ==========================================
+/**
+ * Toggles side navigation visibility
+ */
+function toggleSidenav() {
+    sidenav.classList.toggle("open");
+    overlay.classList.toggle("active");
+}
 
-    // Sidebar toggle button
-    document.getElementById('sidebarToggle').addEventListener('click', () => {
-        document.getElementById('sidebar').classList.toggle('active');
-        document.getElementById('overlay').classList.toggle('active');
-    });
+menuToggle.addEventListener("click", toggleSidenav);
+overlay.addEventListener("click", toggleSidenav);
 
-    // Overlay click to close sidebar
-    document.getElementById('overlay').addEventListener('click', () => {
-        document.getElementById('sidebar').classList.remove('active');
-        document.getElementById('overlay').classList.remove('active');
-    });
+// Mobile Touch Event Handlers
 
-    // Theme toggle button (light/dark mode)
-    document.getElementById('themeToggle').addEventListener('click', () => {
-        const theme = document.documentElement.getAttribute('data-theme');
-        const newTheme = theme === 'dark' ? 'light' : 'dark';
-        document.documentElement.setAttribute('data-theme', newTheme);
-        localStorage.setItem('theme', newTheme);
+/**
+ * Handles touch start - records initial X position
+ */
+document.addEventListener('touchstart', (e) => {
+    touchStartX = e.touches[0].clientX;
+});
 
-        // Update icon based on theme
-        const icon = document.querySelector('#themeToggle i');
-        icon.className = newTheme === 'dark' ? 'bi bi-sun' : 'bi bi-moon';
-    });
+/**
+ * Handles touch move - implements swipe logic
+ */
+document.addEventListener('touchmove', (e) => {
+    if (!touchStartX) return;
 
-    // New chat button
-    document.getElementById('newChatBtn').addEventListener('click', createNewChat);
+    const touchEndX = e.touches[0].clientX;
+    const diff = touchStartX - touchEndX;
 
-    // Stop generation button
-    document.getElementById('stopButton').addEventListener('click', () => {
-        currentlyGenerating = false;
-        setInputState(false);
-    });
-
-    // Send button click
-    document.getElementById('sendButton').addEventListener('click', () => {
-        const userInput = document.getElementById('userInput');
-        const message = userInput.value.trim();
-
-        if (message && !currentlyGenerating) {
-            appendMessage(message, true);
-            userInput.value = '';
-            sendMessage(message);
-        }
-    });
-
-    // Enter key press in input field
-    document.getElementById('userInput').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter' && !currentlyGenerating) {
-            document.getElementById('sendButton').click();
-        }
-    });
-
-    // ==========================================
-    // Initialization
-    // ==========================================
-
-    // Load saved theme preference
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) {
-        document.documentElement.setAttribute('data-theme', savedTheme);
-        const icon = document.querySelector('#themeToggle i');
-        icon.className = savedTheme === 'dark' ? 'bi bi-sun' : 'bi bi-moon';
+    // Swipe left to close
+    if (sidenav.classList.contains('open') && diff > 50) {
+        toggleSidenav();
     }
+    // Swipe right to open
+    else if (!sidenav.classList.contains('open') && diff < -50 && touchStartX < 50) {
+        toggleSidenav();
+    }
+});
 
-    // Initialize application by loading saved chats
-    loadChats();
+/**
+ * Handles touch end - resets touch position
+ */
+document.addEventListener('touchend', () => {
+    touchStartX = 0;
+});
+
+// Initialize application
+if (Object.keys(chats).length === 0) {
+    createNewChat();
+} else {
+    // Load the most recent chat
+    loadChat(Object.keys(chats)[Object.keys(chats).length - 1]);
+}
 </script>
 </body>
 </html>
