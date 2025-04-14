@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Groq Chat</title>
+    <!-- Bootstrap CSS and JS for responsive design and UI components -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Bootstrap Icons for UI elements -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+    <style>
+        /* CSS Variables for theme handling - light and dark mode */
+        :root {
+            --primary-color: #1976d2; /* Main theme color - blue */
+            --bg-color: #f5f5f5;      /* Background color - light gray */
+            --text-color: #000;        /* Text color - black */
+            --card-bg: #fff;           /* Card background - white */
+            --icon-color: #000;        /* Icon color - black */
+        }
+
+        /* Dark theme variables */
+        [data-theme="dark"] {
+            --primary-color: #90caf9;  /* Lighter blue for dark mode */
+            --bg-color: #121212;       /* Dark background */
+            --text-color: #fff;        /* White text for dark mode */
+            --card-bg: #1e1e1e;        /* Darker card background */
+            --icon-color: #fff;        /* White icons for dark mode */
+        }
+
+        /* Base body styling */
+        body {
+            overflow: hidden;          /* Prevent scrolling on main body */
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: all 0.3s ease; /* Smooth transition for theme changes */
+        }
+
+        /* Navigation bar styling */
+        .navbar {
+            background-color: var(--card-bg);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Subtle shadow for depth */
+            padding: 0.5rem 1rem;
+            position: fixed;           /* Fixed position at top */
+            top: 0;
+            width: 100%;
+            z-index: 1000;             /* Ensure navbar stays on top */
+        }
+
+        /* Navbar button icon color */
+        .navbar .btn i {
+            color: var(--icon-color);
+        }
+
+        /* App title styling */
+        .navbar-brand {
+            color: var(--text-color);
+            font-size: 1.2rem;
+        }
+
+        /* Sidebar styling for chat history */
+        .sidebar {
+            position: fixed;
+            left: -100%;               /* Initially hidden off-screen */
+            top: 56px;                 /* Position below navbar */
+            height: calc(100vh - 56px); /* Full height minus navbar */
+            width: 80%;
+            max-width: 300px;          /* Limit maximum width */
+            background-color: var(--card-bg);
+            transition: left 0.3s ease; /* Smooth slide-in animation */
+            z-index: 999;
+            padding: 1rem;
+            overflow-y: auto;          /* Scrollable when content overflows */
+        }
+
+        /* Active state for sidebar (when visible) */
+        .sidebar.active {
+            left: 0;
+        }
+
+        /* Chat list container */
+        .chat-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        /* Individual chat item in sidebar */
+        .chat-list-item {
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;           /* Pointer cursor for clickable items */
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12); /* Subtle shadow */
+        }
+
+        /* Hover effect for chat items */
+        .chat-list-item:hover {
+            background-color: rgba(25, 118, 210, 0.1); /* Light highlight */
+        }
+
+        /* Active/selected chat styling */
+        .chat-list-item.active {
+            background-color: rgba(25, 118, 210, 0.2); /* Stronger highlight */
+            border-left: 3px solid var(--primary-color); /* Left accent border */
+        }
+
+        /* Main chat area container */
+        .main-chat {
+            margin-top: 56px;          /* Space for fixed navbar */
+            height: calc(100vh - 56px); /* Full remaining height */
+            display: flex;
+            flex-direction: column;    /* Stack elements vertically */
+        }
+
+        /* Chat message history area */
+        .chat-history {
+            flex-grow: 1;              /* Expand to fill available space */
+            overflow-y: auto;          /* Scrollable for long conversations */
+            padding: 1rem;
+            background-color: var(--bg-color);
+        }
+
+        /* Individual message styling */
+        .message {
+            max-width: 85%;           /* Limit message width */
+            margin-bottom: 1rem;      /* Space between messages */
+            padding: 0.8rem;
+            border-radius: 1rem;      /* Rounded corners for message bubbles */
+            position: relative;
+        }
+
+        /* User message styling (right-aligned) */
+        .user-message {
+            margin-left: auto;        /* Push to right side */
+            background-color: var(--primary-color);
+            color: #fff;              /* White text for contrast */
+        }
+
+        /* Assistant message styling (left-aligned) */
+        .assistant-message {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+        }
+
+        /* Input container at bottom */
+        .input-container {
+            padding: 0.8rem;
+            background-color: var(--card-bg);
+            border-top: 1px solid rgba(128,128,128,0.2); /* Subtle top border */
+        }
+
+        /* New chat floating action button */
+        .new-chat-fab {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;       /* Circular button */
+            background-color: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;  /* Center the plus icon */
+            box-shadow: 0 3px 5px rgba(0,0,0,0.3); /* Elevated shadow */
+            border: none;
+            z-index: 100;
+        }
+
+        /* Theme toggle button styling */
+        .theme-toggle {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            padding: 0.5rem;
+        }
+
+        /* Dropdown menu styling */
+        .dropdown-menu {
+            background-color: var(--card-bg);
+            border-color: rgba(128,128,128,0.2);
+            min-width: 200px;
+            padding: 0.5rem;
+        }
+
+        /* Dropdown item styling */
+        .dropdown-item {
+            color: var(--text-color);
+            padding: 0.5rem 1rem;
+        }
+
+        /* Dropdown item hover effect */
+        .dropdown-item:hover {
+            background-color: rgba(25, 118, 210, 0.1);
+        }
+
+        /* Dropdown header styling */
+        .dropdown-header {
+            color: var(--text-color);
+        }
+
+        /* Model selector dropdown styling */
+        .model-selector {
+            width: 100%;
+            padding: 0.5rem;
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            border: 1px solid rgba(128,128,128,0.2);
+            border-radius: 4px;
+        }
+
+        /* Model selector options styling */
+        .model-selector option {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+        }
+
+        /* Semi-transparent overlay for sidebar backdrop */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0,0,0,0.5); /* Semi-transparent black */
+            display: none;            /* Initially hidden */
+            z-index: 998;             /* Below sidebar but above content */
+        }
+
+        /* Active state for overlay */
+        .overlay.active {
+            display: block;
+        }
+
+        /* Responsive adjustments for mobile */
+        @media (max-width: 768px) {
+            .message {
+                max-width: 90%;      /* Wider messages on small screens */
+            }
+        }
+    </style>
+</head>
+<body>
+<!-- Top navigation bar -->
+<nav class="navbar">
+    <!-- Sidebar toggle button -->
+    <button class="btn" id="sidebarToggle">
+        <i class="bi bi-list"></i>
+    </button>
+    <!-- App title -->
+    <span class="navbar-brand">Cheeku 1.0</span>
+    <!-- Right-side controls -->
+    <div class="d-flex">
+        <!-- Theme toggle (light/dark mode) -->
+        <button class="theme-toggle" id="themeToggle">
+            <i class="bi bi-moon"></i>
+        </button>
+        <!-- Settings dropdown -->
+        <div class="dropdown">
+            <button class="btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-gear"></i>
+            </button>
+            <!-- Dropdown menu for settings -->
+            <div class="dropdown-menu dropdown-menu-end">
+                <h6 class="dropdown-header">Select AI Model</h6>
+                <div class="px-3">
+                    <!-- Model selection dropdown -->
+                    <select class="model-selector" id="modelSelector">
+                        <option value="Llama-3.3-70b-Versatile">Llama 3.3 70B Versatile</option>
+                        <option value="Llama-3.3-70b-Specdec">Llama 3.3 70B Specdec</option>
+                        <option value="Llama-3.1-70b-Specdec">Llama 3.1 70B Specdec</option>
+                        <option value="Llama-3.2-3b-Preview">Llama 3.2 3B Preview</option>
+                        <option value="Llama-3.2-1b-Preview">Llama 3.2 1B Preview</option>
+                        <option value="Llama-3.1-70b-Versatile">Llama 3.1 70B Versatile</option>
+                        <option value="Llama-3.1-8b-Instant">Llama 3.1 8B Instant</option>
+                        <option value="Llama3-70b-8192">Llama3 70B 8K</option>
+                        <option value="Llama3-8b-8192">Llama3 8B 8K</option>
+                        <option value="Mixtral-8x7b-32768">Mixtral 8x7B 32K</option>
+                        <option value="Gemma2-9b-It">Gemma2 9B</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- Semi-transparent overlay for when sidebar is open -->
+<div class="overlay" id="overlay"></div>
+
+<!-- Sidebar for chat history -->
+<div class="sidebar" id="sidebar">
+    <ul class="chat-list" id="chatList"></ul>
+</div>
+
+<!-- Main chat interface -->
+<div class="main-chat">
+    <!-- Chat messages container -->
+    <div class="chat-history" id="chatHistory"></div>
+    <!-- User input container -->
+    <div class="input-container">
+        <div class="input-group">
+            <!-- Text input field -->
+            <input type="text" class="form-control" id="userInput" placeholder="Ask anything...">
+            <!-- Send button -->
+            <button class="btn btn-primary" id="sendButton">
+                <i class="bi bi-send"></i>
+            </button>
+            <!-- Stop generation button (hidden by default) -->
+            <button class="btn btn-danger stop-btn" id="stopButton" style="display: none;">
+                <i class="bi bi-stop-fill"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Floating action button for new chat -->
+<button class="new-chat-fab" id="newChatBtn">
+    <i class="bi bi-plus-lg"></i>
+</button>
+
+<script>
+    // ==========================================
+    // API Configuration
+    // ==========================================
+
+    /**
+     * Groq API endpoint URL for chat completions
+     * This is the official endpoint to connect with Groq's LLM service
+     * @constant {string} GROQ_API_ENDPOINT
+     */
+    const GROQ_API_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
+
+    /**
+     * API key for authenticating requests to Groq
+     * @constant {string} GROQ_API_KEY
+     */
+    const GROQ_API_KEY = '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';
+
+    // ==========================================
+    // State Variables
+    // ==========================================
+
+    /**
+     * Array to store the current conversation messages
+     * Each message has a role ('user' or 'assistant') and content (text)
+     * @type {Array}
+     */
+    let messageHistory = [];
+
+    /**
+     * Unique identifier for the current chat
+     * Uses timestamp to ensure unique IDs
+     * @type {number}
+     */
+    let currentChatId = Date.now();
+
+    /**
+     * Object to store all chats
+     * Keys are chat IDs, values are objects with messages and title
+     * @type {Object}
+     */
+    let chats = {};
+
+    /**
+     * Flag to track if AI is currently generating a response
+     * Used to prevent sending multiple requests simultaneously
+     * @type {boolean}
+     */
+    let currentlyGenerating = false;
+
+    // ==========================================
+    // Chat Management Functions
+    // ==========================================
+
+    /**
+     * Loads saved chats from localStorage on application startup
+     * If no chats exist, creates a new default chat
+     */
+    function loadChats() {
+        // Try to get chats from localStorage
+        const savedChats = localStorage.getItem('cheekuChats');
+        if (savedChats) {
+            chats = JSON.parse(savedChats);
+            // If no chats exist, create a new one
+            if (Object.keys(chats).length === 0) {
+                createNewChat();
+            } else {
+                // Switch to the most recent chat
+                const chatIds = Object.keys(chats);
+                currentChatId = Math.max(...chatIds.map(Number));
+                messageHistory = chats[currentChatId].messages;
+                updateChatList();
+                displayChatHistory();
+            }
+        } else {
+            // No saved chats at all, create a new one
+            createNewChat();
+        }
+    }
+
+    /**
+     * Saves current chats to localStorage for persistence
+     * Also notifies Android app if available
+     */
+    function saveChats() {
+        // Save to localStorage
+        localStorage.setItem('cheekuChats', JSON.stringify(chats));
+
+        // Also notify Android app about the update (for mobile integration)
+        try {
+            // Try to call the Android interface if available
+            Android.onChatsUpdated(JSON.stringify(chats));
+        } catch (e) {
+            console.log('Android interface not available');
+        }
+    }
+
+    /**
+     * Creates a new chat with a unique ID
+     * Sets it as the current chat and updates the UI
+     */
+    function createNewChat() {
+        // Generate new chat ID using current timestamp
+        currentChatId = Date.now();
+        // Clear message history
+        messageHistory = [];
+        // Create new chat object with default title
+        chats[currentChatId] = {
+            messages: [],
+            title: 'New Chat'
+        };
+        // Update UI
+        updateChatList();
+        clearChatHistory();
+        // Add welcome message
+        appendMessage("Hello! I'm Cheeku 1.0, your AI assistant. How can I help you today?", false);
+        // Save to storage
+        saveChats();
+        // Close sidebar if open
+        toggleSidebar();
+    }
+
+    /**
+     * Switches to a different chat based on ID
+     * Updates UI to show selected chat's messages
+     * @param {string} chatId - ID of the chat to switch to
+     */
+    function switchChat(chatId) {
+        // Update current chat ID
+        currentChatId = chatId;
+        // Load this chat's message history
+        messageHistory = chats[chatId].messages;
+        // Update UI to reflect the change
+        updateChatList();
+        displayChatHistory();
+    }
+
+    /**
+     * Deletes a chat from storage
+     * If the current chat is deleted, creates a new one
+     * @param {string} chatId - ID of the chat to delete
+     * @param {Event} event - Click event (to prevent bubbling)
+     */
+    function deleteChat(chatId, event) {
+        // Prevent click from bubbling to parent (which would select the chat)
+        event.stopPropagation();
+        // Remove the chat from storage
+        delete chats[chatId];
+        // Save changes
+        saveChats();
+        // If we deleted the current chat, create a new one
+        if (currentChatId === chatId) {
+            createNewChat();
+        } else {
+            // Otherwise just update the sidebar list
+            updateChatList();
+        }
+    }
+
+    // ==========================================
+    // UI Management Functions
+    // ==========================================
+
+    /**
+     * Updates the sidebar chat list
+     * Highlights the current active chat
+     */
+    function updateChatList() {
+        const chatList = document.getElementById('chatList');
+        chatList.innerHTML = '';
+
+        // Create list items for each chat (newest first)
+        Object.entries(chats).reverse().forEach(([id, chat]) => {
+            const li = document.createElement('li');
+            li.className = `chat-list-item ${id == currentChatId ? 'active' : ''}`;
+            li.innerHTML = `
+                <span><i class="bi bi-chat-left-text"></i> ${chat.title}</span>
+                <button class="btn btn-link p-0 delete-chat-btn" onclick="deleteChat('${id}', event)">
+                    <i class="bi bi-trash"></i>
+                </button>
+            `;
+            // Add click handler to switch chats
+            li.onclick = () => {
+                switchChat(id);
+                toggleSidebar();
+            };
+            chatList.appendChild(li);
+        });
+    }
+
+    /**
+     * Clears the chat history display in the UI
+     */
+    function clearChatHistory() {
+        document.getElementById('chatHistory').innerHTML = '';
+    }
+
+    /**
+     * Displays all messages from the current chat in the UI
+     */
+    function displayChatHistory() {
+        clearChatHistory();
+        // Loop through all messages in current chat
+        messageHistory.forEach(msg => {
+            appendMessage(msg.content, msg.role === 'user');
+        });
+    }
+
+    /**
+     * Toggles sidebar visibility
+     * Shows/hides overlay background
+     */
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.remove('active');
+        document.getElementById('overlay').classList.remove('active');
+    }
+
+    /**
+     * Toggles input field and button states during response generation
+     * Also shows/hides the stop button
+     * @param {boolean} disabled - Whether to disable input controls
+     */
+    function setInputState(disabled) {
+        const userInput = document.getElementById('userInput');
+        const sendButton = document.getElementById('sendButton');
+        const stopButton = document.getElementById('stopButton');
+
+        // Disable/enable input field and send button
+        userInput.disabled = disabled;
+        sendButton.disabled = disabled;
+
+        // Show/hide stop button
+        stopButton.style.display = disabled ? 'block' : 'none';
+    }
+
+    /**
+     * Formats message text with proper paragraph and list handling
+     * Converts markdown-like syntax to HTML
+     * @param {string} content - Raw message text
+     * @returns {string} - HTML formatted content
+     */
+    function formatMessage(content) {
+        const paragraphs = content.split('\n\n');
+
+        return paragraphs.map(para => {
+            // Handle numbered lists (lines starting with numbers)
+            if (/^\d+\./.test(para)) {
+                const items = para.split(/\d+\./);
+                return `<ol>${items.map(item => item.trim() ? `<li>${item.trim()}</li>` : '').join('')}</ol>`;
+            }
+
+            // Handle bullet lists (lines starting with *)
+            if (para.includes('* ')) {
+                const items = para.split('* ');
+                return `<ul>${items.map(item => item.trim() ? `<li>${item.trim()}</li>` : '').join('')}</ul>`;
+            }
+
+            // Normal paragraph
+            return `<p>${para}</p>`;
+        }).join('');
+    }
+
+    /**
+     * Appends a new message to the chat history
+     * @param {string} content - The message text
+     * @param {boolean} isUser - True if message is from user, false if from assistant
+     */
+    function appendMessage(content, isUser) {
+        const chatHistory = document.getElementById('chatHistory');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${isUser ? 'user-message' : 'assistant-message'}`;
+
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'message-content';
+        contentDiv.innerHTML = isUser ? content : formatMessage(content);
+        messageDiv.appendChild(contentDiv);
+
+        chatHistory.appendChild(messageDiv);
+        // Auto-scroll to the latest message
+        chatHistory.scrollTop = chatHistory.scrollHeight;
+    }
+
+    /**
+     * Updates the content of the latest assistant message
+     * Used during streaming to show progressive generation
+     * @param {string} content - Updated message content
+     */
+    function updateLatestMessage(content) {
+        const messages = document.getElementsByClassName('assistant-message');
+        if (messages.length > 0) {
+            const latest = messages[messages.length - 1];
+            latest.querySelector('.message-content').innerHTML = formatMessage(content);
+        }
+    }
+
+    // ==========================================
+    // API Communication & Message Handling
+    // ==========================================
+
+    /**
+     * Sends user message to Groq API and processes response
+     * @param {string} userInput - User's message text
+     */
+    async function sendMessage(userInput) {
+        try {
+            // Disable input while generating
+            setInputState(true);
+            currentlyGenerating = true;
+
+            // Create user message object and add to history
+            const userMessage = {
+                role: 'user',
+                content: userInput
+            };
+            messageHistory.push(userMessage);
+
+            // Get selected AI model from dropdown
+            const selectedModel = document.getElementById('modelSelector').value;
+
+            // Prepare request body for API
+            const requestBody = {
+                model: selectedModel,
+                messages: messageHistory,
+                temperature: 0.3,           // Lower temperature for more deterministic outputs
+                max_tokens: 1000            // Limit response length
+            };
+
+            // Show "generating" placeholder
+            appendMessage('Generating response...', false);
+
+            // Send request to Groq API
+            const response = await fetch(GROQ_API_ENDPOINT, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${GROQ_API_KEY}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+            // Check for HTTP errors
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            // Parse JSON response
+            const data = await response.json();
+            const assistantMessage = data.choices[0].message.content;
+
+            // Simulate streaming effect for better UX
+            await simulateStreaming(assistantMessage);
+
+            // Add assistant response to message history
+            messageHistory.push({
+                role: 'assistant',
+                content: assistantMessage
+            });
+
+            // If this is the first exchange, use user message as chat title
+            if (messageHistory.length === 2) {
+                chats[currentChatId].title = userInput.slice(0, 30) + '...';
+                updateChatList();
+            }
+
+            // Save updated messages to current chat
+            chats[currentChatId].messages = messageHistory;
+            saveChats(); // Save after each message
+
+        } catch (error) {
+            console.error('Error:', error);
+            updateLatestMessage(`Error: ${error.message}`);
+        } finally {
+            // Reset generating state and enable input
+            currentlyGenerating = false;
+            setInputState(false);
+        }
+    }
+
+    /**
+     * Simulates streaming effect for assistant responses
+     * Makes it look like the AI is typing in real-time
+     * @param {string} content - Complete message content
+     * @returns {Promise} - Resolves when "typing" is complete
+     */
+    async function simulateStreaming(content) {
+        let currentText = '';
+        const words = content.split(' ');
+
+        // Gradually add words with delay
+        for (let i = 0; i < words.length && currentlyGenerating; i++) {
+            currentText += (i > 0 ? ' ' : '') + words[i];
+            updateLatestMessage(currentText);
+            // Small delay between words (50ms)
+            await new Promise(resolve => setTimeout(resolve, 50));
+        }
+    }
+
+    // ==========================================
+    // Event Listeners
+    // ==========================================
+
+    // Sidebar toggle button
+    document.getElementById('sidebarToggle').addEventListener('click', () => {
+        document.getElementById('sidebar').classList.toggle('active');
+        document.getElementById('overlay').classList.toggle('active');
+    });
+
+    // Overlay click to close sidebar
+    document.getElementById('overlay').addEventListener('click', () => {
+        document.getElementById('sidebar').classList.remove('active');
+        document.getElementById('overlay').classList.remove('active');
+    });
+
+    // Theme toggle button (light/dark mode)
+    document.getElementById('themeToggle').addEventListener('click', () => {
+        const theme = document.documentElement.getAttribute('data-theme');
+        const newTheme = theme === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+
+        // Update icon based on theme
+        const icon = document.querySelector('#themeToggle i');
+        icon.className = newTheme === 'dark' ? 'bi bi-sun' : 'bi bi-moon';
+    });
+
+    // New chat button
+    document.getElementById('newChatBtn').addEventListener('click', createNewChat);
+
+    // Stop generation button
+    document.getElementById('stopButton').addEventListener('click', () => {
+        currentlyGenerating = false;
+        setInputState(false);
+    });
+
+    // Send button click
+    document.getElementById('sendButton').addEventListener('click', () => {
+        const userInput = document.getElementById('userInput');
+        const message = userInput.value.trim();
+
+        if (message && !currentlyGenerating) {
+            appendMessage(message, true);
+            userInput.value = '';
+            sendMessage(message);
+        }
+    });
+
+    // Enter key press in input field
+    document.getElementById('userInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !currentlyGenerating) {
+            document.getElementById('sendButton').click();
+        }
+    });
+
+    // ==========================================
+    // Initialization
+    // ==========================================
+
+    // Load saved theme preference
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        const icon = document.querySelector('#themeToggle i');
+        icon.className = savedTheme === 'dark' ? 'bi bi-sun' : 'bi bi-moon';
+    }
+
+    // Initialize application by loading saved chats
+    loadChats();
+</script>
+</body>
+</html>
